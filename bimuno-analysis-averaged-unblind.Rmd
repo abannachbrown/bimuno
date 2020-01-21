@@ -2,11 +2,12 @@
 title: "Bimuno Analysis with Data Averaged per Cage"
 output:
   word_document: default
-  html_notebook: default
+  html_document: default
 ---
 
 
-```{r}
+# Import Data
+```{r} 
 library(ggplot2)
 library(plyr)
 library(dplyr)
@@ -18,8 +19,8 @@ theme_set(theme_pubclean())
 
 
 # reading in data
-setwd("M:/PhD/Bimuno Chapter/unblind_analysis")
-full_data <- read.csv("M:/PhD/Bimuno Chapter/unblind_analysis/full_data.csv")
+# set working directory 
+full_data <- read.csv("~/Downloads/bimuno/full_data.csv")
 
 # grouping data to average per cage
 
@@ -69,13 +70,12 @@ full_data_nested <- full_data_nested[rowSums(is.na(full_data_nested)) != ncol(fu
 ```
 
 
-Testing Assumptions
+# Testing Assumptions
 ```{r}
-### testing assumptions 
 
-#This experiment has two Factors (i.e., types of manipulations:  Phenotype and Invasiveness), and the experiment has data for all 4 possible combinations of these two Factors.  We should try to analyze it as a 2-way ANOVA.
+###This experiment has two Factors (i.e., types of manipulations:  Phenotype and Invasiveness), and the experiment has data for all 4 possible combinations of these two Factors.  We should try to analyze it as a 2-way ANOVA.
 
-#Plot the data:
+###Plot the data:
 full_data_nested$group <- factor(paste(full_data_nested$model,full_data_nested$drug))
 
 boxplot(FST_swim_imm ~ group, data=full_data_nested,cex.axis = 1.2)
@@ -85,12 +85,12 @@ pch = 21, col = "maroon", bg = "bisque",
 add = TRUE)
 mtext("immobility",2,line=2.5,cex=1.5)
 
-#Model the data
+###Model the data
 p <- aov(FST_swim_imm ~ group, data=full_data_nested)
 
-#Check the assumptions:
+###Check the assumptions:
 plot(p)
-## R identified case 13, 20 and 20 as outliers and have heterogeneity of residuals.. - all from Gin - Red group. 
+#### R identified case 13, 20 and 20 as outliers and have heterogeneity of residuals.. - all from Gin - Red group. 
 
 leveneTest(full_data_nested$FST_swim_imm ~ full_data_nested$model * full_data_nested$drug)
 
@@ -117,8 +117,8 @@ hist(resid(p))
 
 
 
-Results for FST Immobility: 
-All error bars throughout document are SD
+#Results for FST Immobility: 
+## All error bars throughout document are SD
 
 ```{r}
 
@@ -175,7 +175,7 @@ p_test + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("FST Immobility (secs)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
   
 
 # 
@@ -218,7 +218,7 @@ p1<- ggplot(sum_data_fst_swim, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 
 
@@ -232,7 +232,7 @@ p_swim + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("FST Swimming (secs)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
   
 
@@ -241,7 +241,7 @@ p_swim + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
 
 ```
 
-Results for FST Struggling
+# Results for FST Struggling
 
 ```{r}
 ## fst struggling
@@ -260,7 +260,7 @@ p1<-ggplot(sum_data_fst_strug, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -271,7 +271,7 @@ p_strug + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("FST Struggling (secs)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 #model differences - no effect of drug
 
@@ -306,7 +306,7 @@ p_strug + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
 
 
 
-Results for Open Field Total Distance: 
+# Results for Open Field Total Distance: 
 
 
 ```{r}
@@ -326,7 +326,7 @@ p1 <- ggplot(sum_OF_Distance_totalcm, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -338,16 +338,14 @@ p_OF + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("OF Total Distance Travelled (cm)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 
 # model differences
 
 ```
 
-Results for Open Field Speed/Velocity (m/s): 
-
-
+# Results for Open Field Speed/Velocity (m/s): 
 
 ```{r}
 #open field speed velocity m/s
@@ -366,7 +364,7 @@ p1 <- ggplot(sum_data_of_velo, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -374,8 +372,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
-Results for EPM Frequency of Full Body Entries to Open Arms: 
-
+# Results for EPM Frequency of Full Body Entries to Open Arms: 
 
 ```{r}
 #EPM full body to enter open arms frequency
@@ -396,7 +393,7 @@ p1 <- ggplot(sum_data_epm_fullopen_freq, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -409,12 +406,14 @@ p_EPM_full + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("EPM Frequency of Full Entries to Open Arms")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 # only model differences
 
 ```
-Results for EPM Frequency of Entries to Closed Arms:
+
+
+#Results for EPM Frequency of Entries to Closed Arms:
 
 ```{r}
 # EPM closed arms frequency to enter
@@ -434,7 +433,7 @@ p1 <- ggplot(sum_data_epm_closed_freq, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -442,7 +441,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
-Proportion time spent in open arms: 
+# Proportion time spent in open arms: 
 
 ```{r}
 ## make new variable time spent open / time spent open + closed arms
@@ -466,7 +465,7 @@ p1 <- ggplot(sum_EPM_proportion, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -479,7 +478,7 @@ p_EPM_prop + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("EPM Proportion of Time Spent in Open Arm (%)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 ## no sig differences
 
@@ -499,7 +498,7 @@ p1 <- ggplot(sum_EPM_proportion_total, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -508,8 +507,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 
 
-Results for EPM Frequency of Entries to Open Arms:
-
+# Results for EPM Frequency of Entries to Open Arms:
 
 ```{r}
 # EPM open arms frequency to enter
@@ -529,7 +527,7 @@ p1 <- ggplot(sum_data_epm_open_freq, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -537,7 +535,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
-Results for EPM Time Spent with Full Body in Open Arms:
+# Results for EPM Time Spent with Full Body in Open Arms:
 
 ```{r}
 # EPM time spent full body in open arms in secs
@@ -557,7 +555,7 @@ p1 <- ggplot(sum_data_epm_fullopen_secs, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -569,14 +567,13 @@ p_EPM_total_open + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("EPM Time spent in Open Arms")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 # no significant differences
 
 ```
 
-Results for EPM Time Spent with in Open Arms:
-
+# Results for EPM Time Spent with in Open Arms:
 
 ```{r}
 # EPM time spent in open arms in secs
@@ -596,7 +593,7 @@ p1 <- ggplot(sum_data_epm_open_secs, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -604,8 +601,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
-Results for EPM Time Spent in Closed Arms:
-
+# Results for EPM Time Spent in Closed Arms:
 
 ```{r}
 # EPM closed arms time spent in seconds
@@ -625,7 +621,7 @@ p1 <- ggplot(sum_data_epm_closed_secs, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -633,7 +629,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
-Results for EPM Latency to Enter Open Arms:
+# Results for EPM Latency to Enter Open Arms:
 
 ```{r}
 # EPM latency to enter open arms 
@@ -655,7 +651,7 @@ p1 <- ggplot(sum_data_epm_open_latency, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -663,7 +659,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
-Results for EPM Latency to enter Open Arms with Full Body
+# Results for EPM Latency to enter Open Arms with Full Body
 
 ```{r}
 # EPM latency to enter open arms with full body
@@ -684,7 +680,7 @@ p1 <- ggplot(sum_data_epm_fullopen_latency, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -692,7 +688,7 @@ p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
-Weight: 
+# Weight: 
 
 ```{r}
 anova(lm(Weight_W1 ~ model * drug, full_data_nested))
@@ -710,7 +706,7 @@ p1 <- ggplot(sum_data_Weight_W1, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -722,10 +718,10 @@ p_weight1 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("Weight Week 1 (g)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 ```
 
-Week 2
+# Week 2
 ```{r}
 anova(lm(Weight_W2 ~ model * drug, full_data_nested))
 
@@ -742,7 +738,7 @@ p1 <- ggplot(sum_data_Weight_W2, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -755,10 +751,10 @@ p_weight2 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("Weight Week 2 (g)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 ```
 
-Week 3
+# Week 3
 ```{r}
 anova(lm(Weight_W3 ~ model * drug, full_data_nested))
 
@@ -775,7 +771,7 @@ p1 <- ggplot(sum_data_Weight_W3, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -787,12 +783,12 @@ p_weight3 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("Weight Week 3 (g)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 ```
 
 
-Week 4
+# Week 4
 ```{r}
 anova(lm(Weight_W4 ~ model * drug, full_data_nested))
 
@@ -809,7 +805,7 @@ p1 <- ggplot(sum_data_Weight_W4, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -824,12 +820,12 @@ p_weight4 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("Weight Week 4 (g)")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 ```
 
 
-Euthanisation
+# Weight at Euthanisation
 ```{r}
  anova(lm(weight_euth ~ model * drug, full_data_nested))
 
@@ -852,7 +848,7 @@ p1<- ggplot(sum_data_weight_euth, aes(x=model, y=mean, fill=drug)) +
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
                 width=.2,                    # Width of the error bars
                 position=position_dodge(.9))+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
@@ -879,10 +875,12 @@ p_weight_euth + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("Weight (g) at Euthanisation")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 ```
 
+
+# Weight Increase over 4 Weeks
 ```{r}
 # graph for showing weight increase over the 4 weeks
 
@@ -901,12 +899,14 @@ library(plotly)
 w <- ggplot(all_weight_sum, aes(x = Week, y = mean, fill = drug)) +
   geom_bar(stat = "identity",position=position_dodge())+
   facet_wrap(~model, nrow = 1)+
-                  labs(x = "", fill= "Drug")
+                  labs(x = "", fill= "Intervention")
 
 w+scale_fill_manual(values=c("#0000FF", "#FF0000"))
 
 ```
 
+
+# Difference in Weight (Euth - W1)
 ```{r}
 # weight difference 
 
@@ -921,7 +921,7 @@ p_weight_diff + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1),
     stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
     ylab("Weight (g) Gain across the study")+
-  labs(x = "", fill= "Drug")
+  labs(x = "", fill= "Intervention")
 
 ```
 
