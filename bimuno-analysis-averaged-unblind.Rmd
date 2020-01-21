@@ -1,0 +1,927 @@
+---
+title: "Bimuno Analysis with Data Averaged per Cage"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+
+```{r}
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(naniar)
+library(car)
+library(ggpubr)
+theme_set(theme_pubclean())
+
+
+# reading in data
+setwd("M:/PhD/Bimuno Chapter/unblind_analysis")
+full_data <- read.csv("M:/PhD/Bimuno Chapter/unblind_analysis/full_data.csv")
+
+# grouping data to average per cage
+
+full_data_group <- group_by(full_data, cage.code) 
+
+full_data_nested <-  summarise(full_data_group,
+                               cagecode=first(cage.code),
+                       model=first(model),
+                       drug=first(drug),
+                       Weight_W1=mean(Weight_W1),
+                       Weight_W2=mean(Weight_W2),
+                       Weight_W3=mean(Weight_W3),
+                       Weight_W4=mean(Weight_W4),
+                       weight_euth=mean(Euthanisation_Weight),
+                       OF_Distance_totalcm=mean(OF_Distance_totalcm),
+                       OF_Velocity_meancms=mean(OF_Velocity_meancms),
+                       FST_preswim_strug=mean(FST_preswim_strug), 
+                       FST_preswim_swim=mean(FST_preswim_swim),
+                       FST_preswim_imm=mean(FST_preswim_imm),
+                       FST_swim_strug=mean(FST_swim_strug),
+                       FST_swim_swim=mean(FST_swim_swim),
+                       FST_swim_imm=mean(FST_swim_imm),
+                       EPM_close_freq=mean(EPM_close_freq),
+                       EPM_close_secs=mean(EPM_close_secs),
+                       EPM_open_freq=mean(EPM_open_freq),
+                       EPM_open_secs=mean(EPM_open_secs),
+                       EPM_open_latency=mean(EPM_open_latency),
+                       EPM_fullopen_freq=mean(EPM_fullopen_freq),
+                       EPM_fullopen_secs=mean(EPM_fullopen_secs),
+                       EPM_fullopen_latency=mean(EPM_fullopen_latency)
+                       )
+
+# remove NA columns
+full_data_nested <- full_data_nested[rowSums(is.na(full_data_nested)) != ncol(full_data_nested), ]
+
+
+
+#  Variable names: 
+#  [1] "Cage.Code"            "animal.code"          "model"                "drug"                 
+# "Weight_W1"            "Weight_W2"           "Weight_W3"            "Weight_W4"    "Euthanisation_Weight"   "OF_Distance_totalcm"  "OF_Velocity_meancms" 
+#  [7] "FST_preswim_strug"    "FST_preswim_swim"     "FST_preswim_imm"      "FST_swim_strug"       "FST_swim_swim"        "FST_swim_imm"        
+# [13] "EPM_close_freq"       "EPM_close_secs"       "EPM_open_freq"        "EPM_open_secs"        "EPM_open_latency"     "EPM_fullopen_freq"   
+# [19] "EPM_fullopen_secs"    "EPM_fullopen_latency"
+
+
+
+```
+
+
+Testing Assumptions
+```{r}
+### testing assumptions 
+
+#This experiment has two Factors (i.e., types of manipulations:  Phenotype and Invasiveness), and the experiment has data for all 4 possible combinations of these two Factors.  We should try to analyze it as a 2-way ANOVA.
+
+#Plot the data:
+full_data_nested$group <- factor(paste(full_data_nested$model,full_data_nested$drug))
+
+boxplot(FST_swim_imm ~ group, data=full_data_nested,cex.axis = 1.2)
+stripchart(FST_swim_imm ~ group, data=full_data_nested,
+vertical = TRUE, method = "jitter",
+pch = 21, col = "maroon", bg = "bisque",
+add = TRUE)
+mtext("immobility",2,line=2.5,cex=1.5)
+
+#Model the data
+p <- aov(FST_swim_imm ~ group, data=full_data_nested)
+
+#Check the assumptions:
+plot(p)
+## R identified case 13, 20 and 20 as outliers and have heterogeneity of residuals.. - all from Gin - Red group. 
+
+leveneTest(full_data_nested$FST_swim_imm ~ full_data_nested$model * full_data_nested$drug)
+
+# Levene's Test for Homogeneity of Variance (center = median)
+#       Df F value Pr(>F)
+# group  3  1.1862 0.3328
+#       28 
+
+# so no significant differences in equal variances - therefore heterogeneity
+
+shapiro.test(p$residuals)
+
+# 	Shapiro-Wilk normality test
+# 
+# data:  p$residuals
+# W = 0.94601, p-value = 0.1109
+
+# both not significant so no vioaltion of assumptions
+
+hist(resid(p))
+# redisuals are somewhat normally distributed
+```
+
+
+
+
+Results for FST Immobility: 
+All error bars throughout document are SD
+
+```{r}
+
+## fst immobility
+anova(lm(FST_swim_imm ~ model * drug, full_data_nested))
+
+sum_data_fst_imm <- ddply(full_data_nested, c("model", "drug"), summarise,
+               N    = length(FST_swim_imm),
+               mean = mean(FST_swim_imm),
+               sd   = sd(FST_swim_imm),
+               se   = sd / sqrt(N)
+)
+
+# p1 <- ggplot(sum_data_fst_imm, aes(x=model, y=mean, fill=drug)) + 
+#   geom_bar(position=position_dodge(), stat="identity") +
+#   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+#                 width=.2,                    # Width of the error bars
+#                 position=position_dodge(.9))+
+#                   labs(x = "", fill= "Drug")
+
+# full_data_nested$dist_cat_n[full_data_nested$model == "Gin"] <- 1
+# full_data_nested$dist_cat_n[full_data_nested$model == "Whisky"] <- 2
+# 
+# full_data_nested$scat_adj[full_data_nested$drug == "Blue"] <- -0.2
+# full_data_nested$scat_adj[full_data_nested$drug == "Red"] <- 0.2
+# 
+# min.mean.sd.max <- function(x) {
+#   r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
+#   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+#   r
+# }
+
+
+# p1 <- ggplot(full_data_nested, aes(x=model, y=FST_swim_imm, fill=drug))
+# p1 +  geom_boxplot(
+#   aes(color = drug), width = 0.5, size = 0.4,
+#   position = position_dodge(0.8)
+#   ) +
+#   geom_dotplot(
+#     aes(fill = drug, color = drug),
+#     #trim = FALSE,
+#     binaxis='y', stackdir='center', dotsize = 0.8,
+#     position = position_dodge(0.8)
+#   )+
+#   scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+#   scale_color_manual(values = c("#0000FF", "#FF0000"))
+
+#install.packages("Hmisc")
+#library(Hmisc)
+p_test <- ggplot(full_data_nested, aes(x=model, y=FST_swim_imm, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_test + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("FST Immobility (secs)")+
+  labs(x = "", fill= "Drug")
+  
+
+# 
+# p1 <- ggplot(full_data_nested, aes(x=model, y=FST_swim_imm, fill=drug)) + 
+#   geom_boxplot(outlier.size=0)+
+#   labs(x = "", fill= "Drug")+ 
+#   geom_jitter(aes(dist_cat_n + scat_adj,FST_swim_imm),
+#         # position=position_jitter(width=0.1,height=0),
+#         # alpha=0.6,
+#         # size=3,
+#         show.legend = FALSE)+
+#     ylab("FST Immobility (secs)")+    stat_summary(fun.y=mean, geom="point", size=2, position=0.2) +
+#   stat_summary(fun.data = mean_se, geom = "errorbar", position=-0.2)
+# 
+# p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+# effect of model - expect to see difference between FSL and FRL in immobility time 
+# no effect of drug - which is different to the non-averaged data
+
+```
+
+
+Results for FST Swimming:
+
+
+```{r}
+## fst swimming
+anova(lm(FST_swim_swim ~ model * drug, full_data_nested))
+
+sum_data_fst_swim <- ddply(full_data_nested, c("model", "drug"), summarise,
+                          N    = length(FST_swim_swim),
+                          mean = mean(FST_swim_swim),
+                          sd   = sd(FST_swim_swim),
+                          se   = sd / sqrt(N)
+)
+
+p1<- ggplot(sum_data_fst_swim, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+library(Hmisc)
+p_swim <- ggplot(full_data_nested, aes(x=model, y=FST_swim_swim, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_swim + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("FST Swimming (secs)")+
+  labs(x = "", fill= "Drug")
+
+  
+
+
+# no effect 
+
+```
+
+Results for FST Struggling
+
+```{r}
+## fst struggling
+
+anova(lm(FST_swim_strug ~ model * drug, full_data_nested))
+
+sum_data_fst_strug <- ddply(full_data_nested, c("model", "drug"), summarise,
+                           N    = length(FST_swim_strug),
+                           mean = mean(FST_swim_strug),
+                           sd   = sd(FST_swim_strug),
+                           se   = sd / sqrt(N)
+)
+
+p1<-ggplot(sum_data_fst_strug, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+p_strug <- ggplot(full_data_nested, aes(x=model, y=FST_swim_strug, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_strug + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("FST Struggling (secs)")+
+  labs(x = "", fill= "Drug")
+
+#model differences - no effect of drug
+
+```
+
+
+```{r}
+# attempt to create stacked bar chart of time spent in FST
+
+# Activity <- c("Immobility", "Swimming", "Struggling")
+# Model <- c("Gin Blue", "Gin Red", "Whisky Blue", "Whisky Red")
+# 
+# fst_stacked <- data.frame(full_data_nested$model, full_data_nested$drug, full_data_nested$FST_swim_imm, full_data_nested$FST_swim_swim, full_data_nested$FST_swim_strug)
+# 
+# fst_stacked$full_data_nested.model<- as.factor(fst_stacked$full_data_nested.model)
+# fst_stacked$full_data_nested.drug<- as.factor(fst_stacked$full_data_nested.drug)
+# fst_stacked$full_data_nested.FST_swim_imm<- as.numeric(fst_stacked$full_data_nested.FST_swim_imm)
+# fst_stacked$full_data_nested.FST_swim_swim <- as.numeric(fst_stacked$full_data_nested.FST_swim_swim)
+# fst_stacked$full_data_nested.FST_swim_strug <- as.numeric(fst_stacked$full_data_nested.FST_swim_strug)
+
+# barplot(fst_stacked, main="Distribution of Amount of Time Spent in FST",
+#   xlab="Groups", col=c("darkblue","red"),
+#  	legend = rownames(counts))
+
+# library(lattice) 
+# barchart(fst_stacked, scales = list(x = "free"), 
+#           auto.key = list(title = "Time Spent in FST"), horizontal=FALSE) 
+
+
+
+```
+
+
+
+Results for Open Field Total Distance: 
+
+
+```{r}
+#open field total distance
+
+anova(lm(OF_Distance_totalcm ~ model * drug, full_data_nested))
+
+sum_OF_Distance_totalcm <- ddply(full_data_nested, c("model", "drug"), summarise,
+                            N    = length(OF_Distance_totalcm),
+                            mean = mean(OF_Distance_totalcm),
+                            sd   = sd(OF_Distance_totalcm),
+                            se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_OF_Distance_totalcm, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+p_OF <- ggplot(full_data_nested, aes(x=model, y=OF_Distance_totalcm, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_OF + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("OF Total Distance Travelled (cm)")+
+  labs(x = "", fill= "Drug")
+
+
+# model differences
+
+```
+
+Results for Open Field Speed/Velocity (m/s): 
+
+
+
+```{r}
+#open field speed velocity m/s
+
+anova(lm(OF_Velocity_meancms ~ model * drug, full_data_nested))
+
+sum_data_of_velo <- ddply(full_data_nested, c("model", "drug"), summarise,
+                            N    = length(OF_Velocity_meancms),
+                            mean = mean(OF_Velocity_meancms),
+                            sd   = sd(OF_Velocity_meancms),
+                            se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_of_velo, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+# model differences - and model x drug interaction
+
+```
+
+Results for EPM Frequency of Full Body Entries to Open Arms: 
+
+
+```{r}
+#EPM full body to enter open arms frequency
+
+
+anova(lm(EPM_fullopen_freq ~ model * drug, full_data_nested))
+
+
+sum_data_epm_fullopen_freq <- ddply(full_data_nested, c("model", "drug"), summarise,
+                          N    = length(EPM_fullopen_freq),
+                          mean = mean(EPM_fullopen_freq),
+                          sd   = sd(EPM_fullopen_freq),
+                          se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_fullopen_freq, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+
+p_EPM_full <- ggplot(full_data_nested, aes(x=model, y=EPM_fullopen_freq, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_EPM_full + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("EPM Frequency of Full Entries to Open Arms")+
+  labs(x = "", fill= "Drug")
+
+# only model differences
+
+```
+Results for EPM Frequency of Entries to Closed Arms:
+
+```{r}
+# EPM closed arms frequency to enter
+
+anova(lm(EPM_close_freq ~ model * drug, full_data_nested))
+
+
+sum_data_epm_closed_freq <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                    N    = length(EPM_close_freq),
+                                    mean = mean(EPM_close_freq),
+                                    sd   = sd(EPM_close_freq),
+                                    se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_closed_freq, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+#model and drug differences
+
+```
+
+Proportion time spent in open arms: 
+
+```{r}
+## make new variable time spent open / time spent open + closed arms
+full_data_nested <- mutate(full_data_nested, EPM_proportion = (EPM_open_secs/(EPM_open_secs + EPM_close_secs)))
+
+
+full_data_nested <- mutate(full_data_nested, EPM_proportion_total = (EPM_open_secs/300))
+
+anova(lm(EPM_proportion ~ model * drug, full_data_nested))
+
+
+sum_EPM_proportion <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                    N    = length(EPM_proportion),
+                                    mean = mean(EPM_proportion),
+                                    sd   = sd(EPM_proportion),
+                                    se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_EPM_proportion, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+
+p_EPM_prop <- ggplot(full_data_nested, aes(x=model, y=EPM_proportion_total, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_EPM_prop + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("EPM Proportion of Time Spent in Open Arm (%)")+
+  labs(x = "", fill= "Drug")
+
+## no sig differences
+
+
+anova(lm(EPM_proportion_total ~ model * drug, full_data_nested))
+
+
+sum_EPM_proportion_total <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                    N    = length(EPM_proportion_total),
+                                    mean = mean(EPM_proportion_total),
+                                    sd   = sd(EPM_proportion_total),
+                                    se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_EPM_proportion_total, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+```
+
+
+
+
+Results for EPM Frequency of Entries to Open Arms:
+
+
+```{r}
+# EPM open arms frequency to enter
+
+anova(lm(EPM_open_freq ~ model * drug, full_data_nested))
+
+
+sum_data_epm_open_freq <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                  N    = length(EPM_open_freq),
+                                  mean = mean(EPM_open_freq),
+                                  sd   = sd(EPM_open_freq),
+                                  se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_open_freq, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+# no significant differences
+
+```
+
+Results for EPM Time Spent with Full Body in Open Arms:
+
+```{r}
+# EPM time spent full body in open arms in secs
+
+anova(lm(EPM_fullopen_secs ~ model * drug, full_data_nested))
+
+
+sum_data_epm_fullopen_secs <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                N    = length(EPM_fullopen_secs),
+                                mean = mean(EPM_fullopen_secs),
+                                sd   = sd(EPM_fullopen_secs),
+                                se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_fullopen_secs, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+p_EPM_total_open <- ggplot(full_data_nested, aes(x=model, y=EPM_fullopen_secs, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_EPM_total_open + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("EPM Time spent in Open Arms")+
+  labs(x = "", fill= "Drug")
+
+# no significant differences
+
+```
+
+Results for EPM Time Spent with in Open Arms:
+
+
+```{r}
+# EPM time spent in open arms in secs
+
+anova(lm(EPM_open_secs ~ model * drug, full_data_nested))
+
+
+sum_data_epm_open_secs <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                    N    = length(EPM_open_secs),
+                                    mean = mean(EPM_open_secs),
+                                    sd   = sd(EPM_open_secs),
+                                    se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_open_secs, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+# no significant differences
+
+```
+
+Results for EPM Time Spent in Closed Arms:
+
+
+```{r}
+# EPM closed arms time spent in seconds
+
+anova(lm(EPM_close_secs ~ model * drug, full_data_nested))
+
+
+sum_data_epm_closed_secs <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                N    = length(EPM_close_secs),
+                                mean = mean(EPM_close_secs),
+                                sd   = sd(EPM_close_secs),
+                                se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_closed_secs, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+# no significant group differences
+
+```
+
+Results for EPM Latency to Enter Open Arms:
+
+```{r}
+# EPM latency to enter open arms 
+
+full_data_nested$EPM_open_latency <- as.numeric(full_data_nested$EPM_open_latency)
+
+anova(lm(EPM_open_latency ~ model * drug, full_data_nested))
+
+
+sum_data_epm_open_latency <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                  N    = length(EPM_open_latency),
+                                  mean = mean(EPM_open_latency),
+                                  sd   = sd(EPM_open_latency),
+                                  se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_open_latency, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+# no significant differences
+
+```
+
+Results for EPM Latency to enter Open Arms with Full Body
+
+```{r}
+# EPM latency to enter open arms with full body
+
+
+anova(lm(EPM_fullopen_latency ~ model * drug, full_data_nested))
+
+
+sum_data_epm_fullopen_latency <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                   N    = length(EPM_fullopen_latency),
+                                   mean = mean(EPM_fullopen_latency),
+                                   sd   = sd(EPM_fullopen_latency),
+                                   se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_epm_fullopen_latency, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+## no significant differences
+
+```
+
+Weight: 
+
+```{r}
+anova(lm(Weight_W1 ~ model * drug, full_data_nested))
+
+
+sum_data_Weight_W1 <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                   N    = length(Weight_W1),
+                                   mean = mean(Weight_W1),
+                                   sd   = sd(Weight_W1),
+                                   se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_Weight_W1, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+p_weight1 <- ggplot(full_data_nested, aes(x=model, y=Weight_W1, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_weight1 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("Weight Week 1 (g)")+
+  labs(x = "", fill= "Drug")
+```
+
+Week 2
+```{r}
+anova(lm(Weight_W2 ~ model * drug, full_data_nested))
+
+
+sum_data_Weight_W2 <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                   N    = length(Weight_W2),
+                                   mean = mean(Weight_W2),
+                                   sd   = sd(Weight_W2),
+                                   se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_Weight_W2, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+
+p_weight2 <- ggplot(full_data_nested, aes(x=model, y=Weight_W2, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_weight2 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("Weight Week 2 (g)")+
+  labs(x = "", fill= "Drug")
+```
+
+Week 3
+```{r}
+anova(lm(Weight_W3 ~ model * drug, full_data_nested))
+
+
+sum_data_Weight_W3 <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                   N    = length(Weight_W3),
+                                   mean = mean(Weight_W3),
+                                   sd   = sd(Weight_W3),
+                                   se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_Weight_W3, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+p_weight3 <- ggplot(full_data_nested, aes(x=model, y=Weight_W3, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_weight3 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("Weight Week 3 (g)")+
+  labs(x = "", fill= "Drug")
+
+```
+
+
+Week 4
+```{r}
+anova(lm(Weight_W4 ~ model * drug, full_data_nested))
+
+
+sum_data_Weight_W4 <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                   N    = length(Weight_W4),
+                                   mean = mean(Weight_W4),
+                                   sd   = sd(Weight_W4),
+                                   se   = sd / sqrt(N)
+)
+
+p1 <- ggplot(sum_data_Weight_W4, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+
+
+
+p_weight4 <- ggplot(full_data_nested, aes(x=model, y=Weight_W4, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_weight4 + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("Weight Week 4 (g)")+
+  labs(x = "", fill= "Drug")
+
+```
+
+
+Euthanisation
+```{r}
+ anova(lm(weight_euth ~ model * drug, full_data_nested))
+
+
+
+
+interaction.plot(full_data_nested$model, full_data_nested$drug, full_data_nested$weight_euth)
+interaction.plot(full_data_nested$drug, full_data_nested$model, full_data_nested$weight_euth)
+
+
+sum_data_weight_euth <- ddply(full_data_nested, c("model", "drug"), summarise,
+                                   N    = length(weight_euth),
+                                   mean = mean(weight_euth),
+                                   sd   = sd(weight_euth),
+                                   se   = sd / sqrt(N)
+)
+
+p1<- ggplot(sum_data_weight_euth, aes(x=model, y=mean, fill=drug)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd),
+                width=.2,                    # Width of the error bars
+                position=position_dodge(.9))+
+                  labs(x = "", fill= "Drug")
+
+p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+# p1 <- ggplot(full_data_nested, aes(x=model, y=weight_euth, fill=drug)) + 
+#   geom_boxplot(outlier.size=0)+
+#   labs(x = "", fill= "Drug")+ 
+#   geom_jitter(aes(dist_cat_n + scat_adj,weight_euth),
+#         # position=position_jitter(width=0.1,height=0),
+#         # alpha=0.6,
+#         # size=3,
+#         show.legend = FALSE)+
+#     ylab("Weight (g) at Euthanisation")
+# 
+# 
+# p1+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+
+
+p_weight_euth <- ggplot(full_data_nested, aes(x=model, y=weight_euth, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_weight_euth + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("Weight (g) at Euthanisation")+
+  labs(x = "", fill= "Drug")
+
+```
+
+```{r}
+# graph for showing weight increase over the 4 weeks
+
+
+sum_data_Weight_W1$Week=1
+sum_data_Weight_W2$Week=2
+sum_data_Weight_W3$Week=3
+sum_data_Weight_W4$Week=4
+sum_data_weight_euth$Week=5
+
+all_weight_sum <- rbind(sum_data_Weight_W1, sum_data_Weight_W2, sum_data_Weight_W3, sum_data_Weight_W4, sum_data_weight_euth)
+
+library(ggplot2)
+library(plotly)
+
+w <- ggplot(all_weight_sum, aes(x = Week, y = mean, fill = drug)) +
+  geom_bar(stat = "identity",position=position_dodge())+
+  facet_wrap(~model, nrow = 1)+
+                  labs(x = "", fill= "Drug")
+
+w+scale_fill_manual(values=c("#0000FF", "#FF0000"))
+
+```
+
+```{r}
+# weight difference 
+
+full_data_nested$weight_diff <- full_data_nested$weight_euth - full_data_nested$Weight_W1
+anova(lm(weight_diff ~ model * drug, full_data_nested))
+
+
+p_weight_diff <- ggplot(full_data_nested, aes(x=model, y=weight_diff, fill=drug)) + 
+    geom_dotplot(binaxis='y', stackdir='center', position=position_dodge(0.8))
+p_weight_diff + stat_summary(fun.data="mean_sdl", fun.args = list(mult=1), 
+                  geom="errorbar", color="black", position=position_dodge(0.8), width=0.2 )+
+    stat_summary(fun.y=mean, geom="point", color="black",position=position_dodge(0.8))+
+  scale_fill_manual(values = c("#0000FF", "#FF0000"))+
+    ylab("Weight (g) Gain across the study")+
+  labs(x = "", fill= "Drug")
+
+```
+
