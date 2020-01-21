@@ -1,4 +1,4 @@
-# bimuno
+# Unblinded Bimuno Analysis Scripts
 
 Unblinded Analysis Scripts for in vivo animal experiment investigating the effects of the Bimuno prebiotic on behavioural outcomes in Flinders Senstive Line rats, a rat model of depression.
 Protocol & Data available here: 
